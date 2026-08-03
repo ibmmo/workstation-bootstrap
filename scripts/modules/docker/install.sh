@@ -9,7 +9,6 @@ install_docker_linux() {
 
     log_info "Installing Docker Engine"
 
-
     sudo apt-get update
 
     sudo apt-get install -y \
@@ -74,7 +73,6 @@ configure_docker_user() {
 
 ensure_docker_cli() {
 
-
     if command -v docker >/dev/null 2>&1; then
 
         log_info "Docker CLI already installed"
@@ -117,14 +115,23 @@ ensure_docker_cli() {
 
 start_docker_service() {
 
-
     case "$(uname -s)" in
 
         Darwin)
 
-            log_info "Starting Docker Desktop"
+            if [[ -d "/Applications/Docker.app" ]]; then
 
-            open -a Docker
+                log_info "Starting Docker Desktop"
+
+                open -a Docker
+
+            else
+
+                log_error "Docker Desktop not installed"
+
+                exit 1
+
+            fi
 
             ;;
 
@@ -144,7 +151,9 @@ start_docker_service() {
 
 docker_ready() {
 
-    docker info >/dev/null 2>&1 && return 0
+    if docker info >/dev/null 2>&1; then
+        return 0
+    fi
 
 
     if sudo docker info >/dev/null 2>&1; then
@@ -167,7 +176,6 @@ wait_for_docker() {
 
 
     while true; do
-
 
         if docker_ready; then
 
@@ -193,26 +201,7 @@ wait_for_docker() {
 
         elapsed=$((elapsed + 5))
 
-
     done
-
-}
-
-
-run_docker_test() {
-
-
-    log_info "Running Docker validation container"
-
-
-    if docker run --rm hello-world >/dev/null 2>&1; then
-
-        return
-
-    fi
-
-
-    sudo docker run --rm hello-world >/dev/null
 
 }
 
@@ -242,7 +231,4 @@ else
 fi
 
 
-run_docker_test
-
-
-log_success "Docker module validated"
+log_success "Docker daemon validated"
