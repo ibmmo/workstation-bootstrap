@@ -39,6 +39,7 @@ run_module aws
 run_module azure
 run_module hashicorp
 run_module kubernetes
+run_module docker
 
 
 log_success "Bootstrap framework initialized"
