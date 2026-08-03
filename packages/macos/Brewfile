@@ -51,7 +51,7 @@ brew "azd"
 brew "terraform"
 brew "packer"
 brew "ansible"
-brew "vagrant"
+cask "vagrant"
 
 
 # ==========================================
