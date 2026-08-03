@@ -9,6 +9,7 @@ install_docker_linux() {
 
     log_info "Installing Docker Engine"
 
+
     sudo apt-get update
 
     sudo apt-get install -y \
@@ -29,8 +30,7 @@ install_docker_linux() {
 
 
     echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
-      $(. /etc/os-release && echo ${VERSION_CODENAME}) stable" \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(. /etc/os-release && echo ${VERSION_CODENAME}) stable" \
       | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 
 
@@ -50,7 +50,30 @@ install_docker_linux() {
 }
 
 
+configure_docker_user() {
+
+    if [[ "$(uname -s)" != "Linux" ]]; then
+        return
+    fi
+
+
+    if getent group docker >/dev/null 2>&1; then
+
+        if ! id -nG "${USER}" | grep -qw docker; then
+
+            log_info "Adding ${USER} to docker group"
+
+            sudo usermod -aG docker "${USER}"
+
+        fi
+
+    fi
+
+}
+
+
 ensure_docker_cli() {
+
 
     if command -v docker >/dev/null 2>&1; then
 
@@ -72,7 +95,7 @@ ensure_docker_cli() {
 
         Darwin)
 
-            log_error "Docker Desktop is not installed"
+            log_error "Docker Desktop missing"
 
             exit 1
 
@@ -93,6 +116,7 @@ ensure_docker_cli() {
 
 
 start_docker_service() {
+
 
     case "$(uname -s)" in
 
@@ -118,6 +142,21 @@ start_docker_service() {
 }
 
 
+docker_ready() {
+
+    docker info >/dev/null 2>&1 && return 0
+
+
+    if sudo docker info >/dev/null 2>&1; then
+        return 0
+    fi
+
+
+    return 1
+
+}
+
+
 wait_for_docker() {
 
     local timeout=120
@@ -129,7 +168,8 @@ wait_for_docker() {
 
     while true; do
 
-        if docker info >/dev/null 2>&1; then
+
+        if docker_ready; then
 
             log_info "Docker daemon ready"
 
@@ -142,7 +182,7 @@ wait_for_docker() {
 
             log_error "Docker daemon did not become ready"
 
-            docker info || true
+            sudo docker info || docker info || true
 
             exit 1
 
@@ -153,7 +193,26 @@ wait_for_docker() {
 
         elapsed=$((elapsed + 5))
 
+
     done
+
+}
+
+
+run_docker_test() {
+
+
+    log_info "Running Docker validation container"
+
+
+    if docker run --rm hello-world >/dev/null 2>&1; then
+
+        return
+
+    fi
+
+
+    sudo docker run --rm hello-world >/dev/null
 
 }
 
@@ -162,12 +221,15 @@ log_info "Checking Docker CLI"
 
 ensure_docker_cli
 
+configure_docker_user
+
 docker --version
 
 
 log_info "Checking Docker daemon"
 
-if docker info >/dev/null 2>&1; then
+
+if docker_ready; then
 
     log_info "Docker daemon already running"
 
@@ -180,9 +242,7 @@ else
 fi
 
 
-log_info "Running Docker validation container"
-
-docker run --rm hello-world >/dev/null
+run_docker_test
 
 
 log_success "Docker module validated"
