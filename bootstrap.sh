@@ -8,11 +8,13 @@ source "${ROOT_DIR}/scripts/lib/log.sh"
 source "${ROOT_DIR}/scripts/lib/platform.sh"
 source "${ROOT_DIR}/scripts/lib/verify.sh"
 source "${ROOT_DIR}/scripts/lib/config.sh"
+source "${ROOT_DIR}/scripts/lib/module.sh"
 
 
 log_section "Workstation Bootstrap"
 
 log_info "Root directory: ${ROOT_DIR}"
+
 
 OS="$(detect_os)"
 ARCH="$(detect_architecture)"
@@ -32,25 +34,7 @@ if [[ "${OS}" == "linux" ]]; then
 fi
 
 
-if module_enabled system_packages; then
-
-    log_info "Installing system packages"
-
-    if [[ "${OS}" == "linux" ]]; then
-
-        "${ROOT_DIR}/scripts/linux/install-packages.sh"
-
-    elif [[ "${OS}" == "macos" ]]; then
-
-        "${ROOT_DIR}/scripts/macos/install-packages.sh"
-
-    fi
-
-else
-
-    log_info "System packages module disabled"
-
-fi
+run_module system_packages
 
 
 log_success "Bootstrap framework initialized"
