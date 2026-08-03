@@ -5,14 +5,91 @@ set -euo pipefail
 log_info "Installing Docker module"
 
 
-log_info "Checking Docker CLI"
+install_docker_linux() {
 
-if ! command -v docker >/dev/null 2>&1; then
-    log_error "Docker CLI not found"
-    exit 1
-fi
+    log_info "Installing Docker Engine"
 
-docker --version
+    sudo apt-get update
+
+    sudo apt-get install -y \
+        ca-certificates \
+        curl \
+        gnupg
+
+
+    sudo install -m 0755 -d /etc/apt/keyrings
+
+
+    curl -fsSL https://download.docker.com/linux/debian/gpg \
+        | sudo gpg --dearmor \
+        -o /etc/apt/keyrings/docker.gpg
+
+
+    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+      $(. /etc/os-release && echo ${VERSION_CODENAME}) stable" \
+      | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+
+
+    sudo apt-get update
+
+
+    sudo apt-get install -y \
+        docker-ce \
+        docker-ce-cli \
+        containerd.io \
+        docker-buildx-plugin \
+        docker-compose-plugin
+
+
+    sudo systemctl enable docker
+
+}
+
+
+ensure_docker_cli() {
+
+    if command -v docker >/dev/null 2>&1; then
+
+        log_info "Docker CLI already installed"
+
+        return
+
+    fi
+
+
+    case "$(uname -s)" in
+
+        Linux)
+
+            install_docker_linux
+
+            ;;
+
+
+        Darwin)
+
+            log_error "Docker Desktop is not installed"
+
+            exit 1
+
+            ;;
+
+
+        *)
+
+            log_error "Unsupported operating system"
+
+            exit 1
+
+            ;;
+
+    esac
+
+}
 
 
 start_docker_service() {
@@ -21,44 +98,18 @@ start_docker_service() {
 
         Darwin)
 
-            if [[ -d "/Applications/Docker.app" ]]; then
+            log_info "Starting Docker Desktop"
 
-                log_info "Starting Docker Desktop"
-
-                open -a Docker
-
-            else
-
-                log_error "Docker Desktop not installed"
-                exit 1
-
-            fi
+            open -a Docker
 
             ;;
 
 
         Linux)
 
-            if command -v systemctl >/dev/null 2>&1; then
+            log_info "Starting Docker service"
 
-                log_info "Starting Docker service"
-
-                sudo systemctl start docker
-
-            else
-
-                log_error "systemctl not available"
-                exit 1
-
-            fi
-
-            ;;
-
-
-        *)
-
-            log_error "Unsupported operating system"
-            exit 1
+            sudo systemctl start docker
 
             ;;
 
@@ -72,13 +123,16 @@ wait_for_docker() {
     local timeout=120
     local elapsed=0
 
+
     log_info "Waiting for Docker daemon"
+
 
     while true; do
 
         if docker info >/dev/null 2>&1; then
 
             log_info "Docker daemon ready"
+
             return 0
 
         fi
@@ -86,14 +140,14 @@ wait_for_docker() {
 
         if [[ ${elapsed} -ge ${timeout} ]]; then
 
-            log_error "Docker daemon did not become ready within ${timeout}s"
+            log_error "Docker daemon did not become ready"
+
             docker info || true
+
             exit 1
 
         fi
 
-
-        echo -n "."
 
         sleep 5
 
@@ -102,6 +156,13 @@ wait_for_docker() {
     done
 
 }
+
+
+log_info "Checking Docker CLI"
+
+ensure_docker_cli
+
+docker --version
 
 
 log_info "Checking Docker daemon"
@@ -113,11 +174,6 @@ if docker info >/dev/null 2>&1; then
 else
 
     start_docker_service
-
-    # Docker Desktop needs time to initialize its Linux VM
-    if [[ "$(uname -s)" == "Darwin" ]]; then
-        sleep 10
-    fi
 
     wait_for_docker
 
