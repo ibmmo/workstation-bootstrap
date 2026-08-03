@@ -43,6 +43,8 @@ case "${OS}" in
 
         log_info "macOS detected"
 
+        "${ROOT_DIR}/scripts/macos/install-packages.sh"
+
         ;;
 
 
