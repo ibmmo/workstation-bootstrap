@@ -18,7 +18,7 @@ module_enabled() {
 
     local module="$1"
 
-    if grep -Eq "^  ${module}: true" "${CONFIG_FILE}"; then
+    if grep -Eq "^  ${module}:[[:space:]]*true$" "${CONFIG_FILE}"; then
         return 0
     fi
 
@@ -27,11 +27,33 @@ module_enabled() {
 }
 
 
+get_enabled_modules() {
+
+    awk '
+        /^modules:/ { in_modules=1; next }
+
+        in_modules && /^[^[:space:]]/ { exit }
+
+        in_modules &&
+        /^[[:space:]]+[A-Za-z0-9_-]+:[[:space:]]*true$/ {
+
+            gsub(":", "", $1)
+            print $1
+
+        }
+    ' "${CONFIG_FILE}"
+
+}
+
+
 get_config_value() {
 
     local key="$1"
 
-    grep -E "^  ${key}:" "${CONFIG_FILE}" \
-        | awk '{print $2}'
+    awk -F': *' -v key="${key}" '
+        $1 ~ "^[[:space:]]*"key"$" {
+            print $2
+        }
+    ' "${CONFIG_FILE}"
 
 }

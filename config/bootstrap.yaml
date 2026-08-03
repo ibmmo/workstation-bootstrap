@@ -32,9 +32,6 @@ modules:
   # Kubernetes ecosystem
   kubernetes: true
 
-  # Developer tools
-  development: true
-
   # Terminal customization
   terminal: true
 
