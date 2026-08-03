@@ -1,17 +1,56 @@
-# Workstation Bootstrap configuration
+# ==========================================
+# Workstation Bootstrap Configuration
+# ==========================================
+
+# Global settings
+
+bootstrap:
+  version: "1.0"
+
+
+# ==========================================
+# Modules
+# ==========================================
 
 modules:
 
-  terminal: true
+  # Base operating system packages
+  system_packages: true
 
-  aws: true
-
-  azure: true
-
-  hashicorp: true
-
-  kubernetes: true
-
+  # Container runtime
   docker: true
 
-  vscode: true
+  # AWS tooling
+  aws: true
+
+  # Microsoft Azure tooling
+  azure: true
+
+  # Infrastructure as Code
+  hashicorp: true
+
+  # Kubernetes ecosystem
+  kubernetes: true
+
+  # Developer tools
+  development: true
+
+  # Terminal customization
+  terminal: true
+
+  # Security tools
+  security: true
+
+
+# ==========================================
+# Platform options
+# ==========================================
+
+platform:
+
+  linux:
+    package_manager: native
+
+  macos:
+    package_manager: homebrew
+
