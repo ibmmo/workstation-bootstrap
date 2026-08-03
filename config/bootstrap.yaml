@@ -1,0 +1,17 @@
+# Workstation Bootstrap configuration
+
+modules:
+
+  terminal: true
+
+  aws: true
+
+  azure: true
+
+  hashicorp: true
+
+  kubernetes: true
+
+  docker: true
+
+  vscode: true
