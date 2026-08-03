@@ -37,6 +37,7 @@ fi
 run_module system_packages
 run_module aws
 run_module azure
+run_module hashicorp
 
 
 log_success "Bootstrap framework initialized"
