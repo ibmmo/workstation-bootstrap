@@ -161,7 +161,6 @@ kind version
 
 log_info "Checking kubectx"
 
-kubectx --version
-
+kubectx -h | head -n 3
 
 log_success "Kubernetes module validated"
