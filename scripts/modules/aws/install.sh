@@ -5,7 +5,29 @@ set -euo pipefail
 log_info "Installing AWS module"
 
 
-detect_linux_arch() {
+detect_aws_cli_arch() {
+
+    case "$(uname -m)" in
+
+        aarch64|arm64)
+            echo "aarch64"
+            ;;
+
+        x86_64|amd64)
+            echo "x86_64"
+            ;;
+
+        *)
+            log_error "Unsupported architecture: $(uname -m)"
+            exit 1
+            ;;
+
+    esac
+
+}
+
+
+detect_sam_cli_arch() {
 
     case "$(uname -m)" in
 
@@ -27,6 +49,23 @@ detect_linux_arch() {
 }
 
 
+validate_zip() {
+
+    local file="$1"
+
+    if ! file "${file}" | grep -qi zip; then
+
+        log_error "Downloaded file is not a valid ZIP archive"
+
+        file "${file}"
+
+        exit 1
+
+    fi
+
+}
+
+
 install_aws_cli_linux() {
 
     log_info "Installing AWS CLI v2"
@@ -35,9 +74,13 @@ install_aws_cli_linux() {
 
     tmp_dir="$(mktemp -d)"
 
+
     curl -L -sS \
-        "https://awscli.amazonaws.com/awscli-exe-linux-$(detect_linux_arch).zip" \
+        "https://awscli.amazonaws.com/awscli-exe-linux-$(detect_aws_cli_arch).zip" \
         -o "${tmp_dir}/awscliv2.zip"
+
+
+    validate_zip "${tmp_dir}/awscliv2.zip"
 
 
     unzip -q "${tmp_dir}/awscliv2.zip" \
@@ -57,44 +100,16 @@ install_sam_cli_linux() {
     log_info "Installing AWS SAM CLI"
 
     local tmp_dir
-    local arch
 
     tmp_dir="$(mktemp -d)"
 
-    arch="$(detect_linux_arch)"
+
+    curl -L -sS \
+        "https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-$(detect_sam_cli_arch).zip" \
+        -o "${tmp_dir}/aws-sam-cli.zip"
 
 
-    case "${arch}" in
-
-        arm64)
-
-            curl -L -sS \
-                "https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-arm64.zip" \
-                -o "${tmp_dir}/aws-sam-cli.zip"
-
-            ;;
-
-
-        x86_64)
-
-            curl -L -sS \
-                "https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip" \
-                -o "${tmp_dir}/aws-sam-cli.zip"
-
-            ;;
-
-    esac
-
-
-    if ! file "${tmp_dir}/aws-sam-cli.zip" | grep -qi zip; then
-
-        log_error "Invalid AWS SAM CLI archive"
-
-        file "${tmp_dir}/aws-sam-cli.zip"
-
-        exit 1
-
-    fi
+    validate_zip "${tmp_dir}/aws-sam-cli.zip"
 
 
     unzip -q "${tmp_dir}/aws-sam-cli.zip" \
@@ -134,6 +149,7 @@ ensure_aws_cli() {
             *)
 
                 log_error "Unsupported operating system"
+
                 exit 1
 
                 ;;
@@ -170,6 +186,7 @@ ensure_sam_cli() {
             *)
 
                 log_error "Unsupported operating system"
+
                 exit 1
 
                 ;;
