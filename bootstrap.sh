@@ -10,52 +10,47 @@ source "${ROOT_DIR}/scripts/lib/verify.sh"
 source "${ROOT_DIR}/scripts/lib/config.sh"
 
 
-load_config
-
-
 log_section "Workstation Bootstrap"
 
-log_info "Configuration loaded"
 log_info "Root directory: ${ROOT_DIR}"
-
 
 OS="$(detect_os)"
 ARCH="$(detect_architecture)"
 
+load_config
+
+log_info "Configuration loaded"
 log_info "Operating system: ${OS}"
 log_info "Architecture: ${ARCH}"
 
 
-case "${OS}" in
+if [[ "${OS}" == "linux" ]]; then
 
-    linux)
+    DISTRO="$(detect_linux_distribution)"
+    log_info "Distribution: ${DISTRO}"
 
-        DISTRO="$(detect_linux_distribution)"
+fi
 
-        log_info "Distribution: ${DISTRO}"
+
+if module_enabled system_packages; then
+
+    log_info "Installing system packages"
+
+    if [[ "${OS}" == "linux" ]]; then
 
         "${ROOT_DIR}/scripts/linux/install-packages.sh"
 
-        ;;
-
-
-    macos)
-
-        log_info "macOS detected"
+    elif [[ "${OS}" == "macos" ]]; then
 
         "${ROOT_DIR}/scripts/macos/install-packages.sh"
 
-        ;;
+    fi
 
+else
 
-    *)
+    log_info "System packages module disabled"
 
-        log_error "Unsupported operating system: ${OS}"
-        exit 1
-
-        ;;
-
-esac
+fi
 
 
 log_success "Bootstrap framework initialized"
